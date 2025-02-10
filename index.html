@@ -51,8 +51,9 @@
     <h1>SoilGuessr</h1>
     <p>Read the censored text and try to guess the soil name.</p>
     
-    <button onclick="loadText()">Load New File</button>
-    <button onclick="guessFilename()">Guess</button>
+    <button onclick="loadText()">Load New Soil</button>
+    <button id="guess-button" onclick="guessSoilname()">Guess</button>
+    <button id="give-up-button" onclick="revealAnswer()" style="display: none;">Give Up</button>
 
     <p id="guess-result"></p>
 
@@ -61,19 +62,26 @@
     <canvas id="confetti"></canvas>
 
     <script>
+        let uncensoredText = ""; // Store original text
+
         async function loadText() {
             try {
                 const response = await fetch("https://soilguessr-backend.vercel.app/random-file");
                 const data = await response.json();
-                document.getElementById("text-content").textContent = data.content;
+                document.getElementById("text-content").textContent = data.censored;
+                uncensoredText = data.uncensored;
                 document.getElementById("guess-result").textContent = "";
+
+                // Reset UI visibility
+                document.getElementById("guess-button").style.display = "inline-block";
+                document.getElementById("give-up-button").style.display = "none";
             } catch (error) {
                 document.getElementById("text-content").textContent = "Error loading text.";
             }
         }
 
-        async function guessFilename() {
-            const userGuess = prompt("Enter your guess for the filename:");
+        async function guessSoilname() {
+            const userGuess = prompt("Enter your guess for the soil name:");
             if (!userGuess) return;
 
             const response = await fetch("https://soilguessr-backend.vercel.app/guess", {
@@ -88,11 +96,21 @@
             if (data.message.includes("Correct")) {
                 resultElement.textContent = data.message;
                 resultElement.className = "correct";
-                startConfetti();  // Trigger confetti animation
+                document.getElementById("text-content").textContent = uncensoredText; // Reveal original text
+                startConfetti();
+                document.getElementById("give-up-button").style.display = "none";
+                document.getElementById("guess-button").style.display = "none";
             } else {
                 resultElement.textContent = data.message;
                 resultElement.className = "incorrect";
+                document.getElementById("give-up-button").style.display = "inline-block"; // Show "Give Up" button
             }
+        }
+
+        function revealAnswer() {
+            document.getElementById("text-content").textContent = uncensoredText;
+            document.getElementById("give-up-button").style.display = "none";
+            document.getElementById("guess-button").style.display = "none";
         }
 
         // Confetti animation
@@ -152,7 +170,6 @@
             }, 5000);
         }
 
-        // Load a file when the page first loads
         window.onload = loadText;
     </script>
 
